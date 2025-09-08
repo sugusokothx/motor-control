@@ -1,0 +1,36 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# Node/JS
+node_modules/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# 大きな保管庫（Gitに入れない）
+shared-drive/datasets/
+shared-drive/archive/
+shared-drive/papers/
+motor-control/papers/
+
+# その他よくある生成物
+dist/
+build/
+*.spec
+
+# Build artifacts
+build/
+
+# IDE / Editor
+.vscode/
+.idea/
+
+.obsidian/
