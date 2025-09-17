@@ -530,3 +530,175 @@ loop at Ts:
 この先は、**式(8)の“回帰量（$\phi$）をどう作るか”**をミクロに分解すると、一段理解が深まります。次回は、式(5)の右辺を各パラメータで偏微分して**感度ベクトル**を作り、\*\*式(8)の具体形（比例項・積分項の中身）\*\*を“ノートにそのまま書ける形”で整えましょう。続けますか？
 
 
+了解です。ここからは式(8)の中身、つまり「回帰量（感度ベクトル）$\phi_\theta$」の作り方を丁寧に展開して、**PI適応則を具体式にする**ところまで進めます。ここが理解できると式(9)を“自分で再現”できます。
+
+---
+
+## ステップ1：もう一度、式(5)を思い出す
+
+参照モデル（式(5)）：
+
+$$
+\dot X = AX + BU + C,\quad 
+X=\begin{bmatrix}i_d\\ i_q\end{bmatrix},\ 
+U=\begin{bmatrix}v_d\\ v_q\end{bmatrix}
+$$
+
+具体的には
+
+$$
+\begin{aligned}
+\dot i_d &= \frac{1}{L_d}\bigl(v_d - R_s i_d + \omega L_q i_q\bigr),\\
+\dot i_q &= \frac{1}{L_q}\bigl(v_q - R_s i_q - \omega(L_d i_d+\lambda_m)\bigr).
+\end{aligned}
+$$
+
+→ これを各パラメータ $\theta\in\{R_s,L_d,L_q,\lambda_m\}$ で偏微分すれば、**感度ベクトル $\phi_\theta$** が得られます。
+
+---
+
+## ステップ2：偏微分して感度ベクトルを作る
+
+### (a) $R_s$ に関する感度
+
+$$
+\frac{\partial \dot i_d}{\partial R_s} = -\frac{i_d}{L_d}, \quad
+\frac{\partial \dot i_q}{\partial R_s} = -\frac{i_q}{L_q}
+$$
+
+$$
+\boxed{\phi_{R_s} = 
+\begin{bmatrix}
+-\dfrac{i_d}{L_d}\\[4pt]
+-\dfrac{i_q}{L_q}
+\end{bmatrix}}
+$$
+
+---
+
+### (b) $L_d$ に関する感度
+
+$$
+\dot i_d = \frac{1}{L_d}(v_d - R_s i_d + \omega L_q i_q)
+\quad\Rightarrow\quad
+\frac{\partial \dot i_d}{\partial L_d}
+= -\frac{v_d - R_s i_d + \omega L_q i_q}{L_d^2}
+$$
+
+$$
+\dot i_q = \frac{1}{L_q}(v_q - R_s i_q - \omega(L_d i_d+\lambda_m))
+\quad\Rightarrow\quad
+\frac{\partial \dot i_q}{\partial L_d}
+= -\frac{\omega i_d}{L_q}
+$$
+
+$$
+\boxed{\phi_{L_d} =
+\begin{bmatrix}
+-\dfrac{v_d - R_s i_d + \omega L_q i_q}{L_d^2}\\[6pt]
+-\dfrac{\omega i_d}{L_q}
+\end{bmatrix}}
+$$
+
+---
+
+### (c) $L_q$ に関する感度
+
+同様に
+
+$$
+\frac{\partial \dot i_d}{\partial L_q}
+= \frac{\omega i_q}{L_d}, \qquad
+\frac{\partial \dot i_q}{\partial L_q}
+= -\frac{v_q - R_s i_q - \omega(L_d i_d+\lambda_m)}{L_q^2}
+$$
+
+$$
+\boxed{\phi_{L_q} =
+\begin{bmatrix}
+\frac{\omega i_q}{L_d}\\[6pt]
+-\frac{v_q - R_s i_q - \omega(L_d i_d+\lambda_m)}{L_q^2}
+\end{bmatrix}}
+$$
+
+---
+
+### (d) $\lambda_m$ に関する感度
+
+$$
+\frac{\partial \dot i_d}{\partial \lambda_m}=0, \quad
+\frac{\partial \dot i_q}{\partial \lambda_m}=-\frac{\omega}{L_q}
+$$
+
+$$
+\boxed{\phi_{\lambda_m}=
+\begin{bmatrix}
+0\\[6pt]
+-\frac{\omega}{L_q}
+\end{bmatrix}}
+$$
+
+---
+
+## ステップ3：PI適応則に代入（式(8)の具体形）
+
+論文の式(8)は一般形：
+
+$$
+\dot{\hat\theta}=k_{\theta p}\,\varepsilon_\theta + k_{\theta i}\!\int \varepsilon_\theta dt,
+\quad
+\varepsilon_\theta = \phi_\theta^\top e
+$$
+
+これを各パラメータで書くと：
+
+$$
+\boxed{
+\begin{aligned}
+\dot{\hat R_s} &= k_{Rp}\,\phi_{R_s}^\top e + k_{Ri} \int \phi_{R_s}^\top e \,dt \\
+\dot{\hat L_d} &= k_{Lp}\,\phi_{L_d}^\top e + k_{Li} \int \phi_{L_d}^\top e \,dt \\
+\dot{\hat L_q} &= k_{Qp}\,\phi_{L_q}^\top e + k_{Qi} \int \phi_{L_q}^\top e \,dt \\
+\dot{\hat\lambda}_m &= k_{\lambda p}\,\phi_{\lambda_m}^\top e + k_{\lambda i} \int \phi_{\lambda_m}^\top e \,dt
+\end{aligned}}
+$$
+
+ここで
+
+* $e=\begin{bmatrix}e_d\\e_q\end{bmatrix}=\hat X-X$
+* 各行は「比例項＋積分項」＝PI適応
+* ゲイン $k_{\theta p},k_{\theta i}>0$ は調整パラメータ
+
+---
+
+## ステップ4：離散時間版にする
+
+実装時はサンプル周期 $T_s$ で積分を近似：
+
+$$
+\begin{aligned}
+z_{\theta,k+1}&=z_{\theta,k}+T_s\phi_{\theta,k}^\top e_k,\\[3pt]
+\hat\theta_{k+1}&=\hat\theta_k+k_{\theta p}\phi_{\theta,k}^\top e_k+k_{\theta i}z_{\theta,k+1}
+\end{aligned}
+$$
+
+これが論文の式(9)の**更新則の離散化**に相当します。
+
+---
+
+## ステップ5：安定性の保証（POPOV条件）
+
+本文は、上記のように $\varepsilon_\theta=\phi_\theta^\top e$ を入力とするPI補償器が**Popovの積分不等式**を満たすことを示しています（表1＋積分不等式の記述）。
+
+> ポイント：比例項が十分小さい、積分項が非負、という条件で「ハイパ安定性」が保証される。
+
+---
+
+## ステップ6：ノートにまとめるときのポイント
+
+* 左ページに $\phi_\theta$ を4本並べて大枠
+* 右ページに $\dot{\hat\theta}=k_p\phi_\theta^\top e+k_i\int\phi_\theta^\top e dt$ のテンプレ
+* 下に「離散版」「クリップ条件」「アンチワインドアップ」を追加
+
+---
+
+次のステップでは、この更新式を**シミュレーションに組み込む準備**として、ゲインの初期値設定と、感度ベクトルの正規化（スケーリング）について具体的に見ていきますか？（どのくらいの大きさにすると安定して収束するかの目安です）
