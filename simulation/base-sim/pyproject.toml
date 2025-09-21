@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=67"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ipmsim"
+version = "0.1.0"
+description = "Minimal interior PMSM drive simulator derived from motulator"
+authors = [{name = "Auto-generated"}]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "scipy",
+    "matplotlib",
+    "tqdm",
+]
+
+[project.urls]
+Repository = ""
